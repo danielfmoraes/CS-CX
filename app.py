@@ -14,7 +14,7 @@ from utils.market_api import get_market_trends
 st.set_page_config(layout="wide")
 
 # =========================
-# ESTILO (IDENTIDADE VISUAL)
+# ESTILO
 # =========================
 st.markdown("""
 <style>
@@ -40,10 +40,10 @@ h1, h2, h3, h4 {
 # HEADER
 # =========================
 st.title("🚀 Máquina de Crescimento Previsível")
-st.caption("Integração entre Customer Success, Customer Experience e Inteligência de Mercado")
+st.caption("CS + CX + Dados = Receita")
 
 # =========================
-# CACHE + DATA
+# DATA
 # =========================
 @st.cache_data
 def load_data():
@@ -61,6 +61,21 @@ df = calculate_health_score(df)
 nrr = calculate_nrr(df)
 
 # =========================
+# ORDEM + CORES HEALTH
+# =========================
+df["health_label"] = pd.Categorical(
+    df["health_label"],
+    categories=["Healthy", "At Risk", "Critical"],
+    ordered=True
+)
+
+health_colors = {
+    "Healthy": "#22C55E",   # Verde
+    "At Risk": "#EAB308",   # Amarelo
+    "Critical": "#EF4444"   # Vermelho
+}
+
+# =========================
 # FORMATADOR
 # =========================
 def humanize(x):
@@ -69,6 +84,23 @@ def humanize(x):
     elif x >= 1_000:
         return f"{x/1_000:.1f} mil"
     return str(x)
+
+# =========================
+# KPI HEALTH
+# =========================
+total_clients = len(df)
+critical_pct = (df["health_label"] == "Critical").mean() * 100
+risk_pct = (df["health_label"] == "At Risk").mean() * 100
+
+# =========================
+# ALERTA EXECUTIVO
+# =========================
+if critical_pct > 15:
+    st.error(f"🚨 ALERTA: {critical_pct:.1f}% da base em risco crítico")
+elif risk_pct > 30:
+    st.warning(f"⚠️ Atenção: {risk_pct:.1f}% da base em risco moderado")
+else:
+    st.success("✅ Base saudável e sob controle")
 
 # =========================
 # MENU
@@ -85,34 +117,45 @@ section = st.sidebar.radio("Escolha:", [
 # 1. VISÃO EXECUTIVA
 # =========================
 if section == "Visão Executiva":
+
     st.header("💰 Torre de Controle de Receita")
 
     total = df["revenue"].sum()
     churn = df["churn_risk"].mean() * 100
     expansion = df["expansion_opportunity"].mean() * 100
 
-    c1, c2, c3, c4 = st.columns(4)
+    c1, c2, c3, c4, c5 = st.columns(5)
+
     c1.metric("Receita Total", humanize(total))
     c2.metric("Risco de Churn", f"{churn:.1f}%")
-    c3.metric("Expansão Potencial", f"{expansion:.1f}%")
+    c3.metric("Expansão", f"{expansion:.1f}%")
     c4.metric("NRR", f"{nrr}%")
+    c5.metric("Clientes Críticos", f"{critical_pct:.1f}%")
 
+    # RECEITA
     st.markdown("### 📊 Receita por Segmento")
     fig = px.bar(df, x="segment", y="revenue", color="segment")
     fig.update_layout(plot_bgcolor="#0B0F2A", paper_bgcolor="#0B0F2A", font_color="white")
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("### ❤️ Health Score dos Clientes")
-    fig2 = px.histogram(df, x="health_label", color="health_label")
+    # HEALTH SCORE
+    st.markdown("### ❤️ Health Score")
+    fig2 = px.histogram(
+        df,
+        x="health_label",
+        color="health_label",
+        color_discrete_map=health_colors
+    )
     fig2.update_layout(plot_bgcolor="#0B0F2A", paper_bgcolor="#0B0F2A", font_color="white")
     st.plotly_chart(fig2, use_container_width=True)
 
-    st.info("🔗 Integração futura via API com CRM, ERP e plataformas de atendimento")
+    st.info("🔗 Integração com CRM, ERP e atendimento via API")
 
 # =========================
 # 2. CX
 # =========================
 elif section == "Excelência Operacional":
+
     st.header("⚙️ Excelência Operacional CX")
 
     fig = px.scatter(
@@ -121,8 +164,10 @@ elif section == "Excelência Operacional":
         y="nps",
         color="health_label",
         size="revenue",
-        hover_data=["client"]
+        hover_data=["client"],
+        color_discrete_map=health_colors
     )
+
     fig.update_layout(plot_bgcolor="#0B0F2A", paper_bgcolor="#0B0F2A", font_color="white")
     st.plotly_chart(fig, use_container_width=True)
 
@@ -132,12 +177,11 @@ elif section == "Excelência Operacional":
     st.markdown("### 🚨 Clientes Críticos")
     st.dataframe(df[df["health_label"] == "Critical"].head(10))
 
-    st.info("🔗 Dados operacionais integráveis via APIs (Zendesk, Freshdesk, etc.)")
-
 # =========================
 # 3. CS
 # =========================
 elif section == "Crescimento e Expansão":
+
     st.header("📈 Crescimento e Expansão")
 
     exp_df = df[df["expansion_opportunity"] == 1]
@@ -146,18 +190,17 @@ elif section == "Crescimento e Expansão":
     fig.update_layout(plot_bgcolor="#0B0F2A", paper_bgcolor="#0B0F2A", font_color="white")
     st.plotly_chart(fig, use_container_width=True)
 
-    st.markdown("### 💎 Top Contas para Expansão")
+    st.markdown("### 💎 Top Expansão")
     st.dataframe(exp_df.sort_values("revenue", ascending=False).head(10))
 
-    st.markdown("### ⚠️ Contas em Risco")
+    st.markdown("### ⚠️ Risco de Churn")
     st.dataframe(df[df["churn_risk"] == 1].head(10))
-
-    st.info("🔗 Integração com CRM permite ação automática do time de CS")
 
 # =========================
 # 4. MERCADO
 # =========================
 elif section == "Inteligência de Mercado":
+
     st.header("🕵️ Inteligência de Mercado")
 
     trends = get_market_trends()
@@ -182,7 +225,4 @@ elif section == "Inteligência de Mercado":
     fig2.update_layout(plot_bgcolor="#0B0F2A", paper_bgcolor="#0B0F2A", font_color="white")
     st.plotly_chart(fig2, use_container_width=True)
 
-    st.info(
-        "💡 Insight: aumento de reclamações + crescimento de demanda = oportunidade estratégica.\n"
-        "🔗 Integração futura com APIs de mercado (Google Trends, Reclame Aqui, etc.)"
-    )
+    st.info("💡 Dados integráveis via APIs externas (Trends, Reclame Aqui, etc.)")
