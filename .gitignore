@@ -1,0 +1,40 @@
+# Byte-compiled / cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment
+.venv/
+env/
+venv/
+*.env
+
+# Streamlit cache / logs
+.streamlit/
+*.log
+
+# Jupyter
+.ipynb_checkpoints
+
+# VSCode
+.vscode/
+
+# OS Files
+.DS_Store
+Thumbs.db
+
+# Data
+data/*.csv
+data/*.json
+
+# Secrets / configs
+*.key
+*.pem
+*.crt
+secrets.toml
+
+# Python packaging
+*.egg-info/
+dist/
+build/
+*.egg
